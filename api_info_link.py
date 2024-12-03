@@ -38,8 +38,8 @@ def fetch_category_data():
     return category_counts
 
 def api_info_link():
-    st.sidebar.title("Charts")
-    barchartShown = st.sidebar.checkbox("Display Charts")
+    st.sidebar.title("API Info")
+    barchartShown = st.sidebar.checkbox("API Question Count")
 
     try:
         # Fetch the category data (cached version)

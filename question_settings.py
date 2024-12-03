@@ -2,11 +2,8 @@ import streamlit as st
 import requests
 import random
 import json
-from game_settings import game_settings
+import pandas as pd
 
-
-
-#TRIVIA QUESTION FETCH FUNCTION
 def fetch_questions(amount=5, category=None, difficulty=None, q_type=None):
     url = "https://opentdb.com/api.php"
     params = {
@@ -27,91 +24,82 @@ def fetch_questions(amount=5, category=None, difficulty=None, q_type=None):
         st.error("Failed to fetch data from the API.")
     return []
 
-
-#QUESTION SETTINGS FUNCTION
 def question_settings():
-    if "round_count" not in st.session_state:
-        st.error("Round count is not set. Please go back to Game Settings.")
-        if st.button("Back to Game Settings"):
-            st.session_state.step = "game_settings"
-        return
+    st.sidebar.title("Question Settings")
+    st.sidebar.divider()
+    
+    # Set number of questions
+    amount = st.sidebar.slider("Number of Questions", 5, 20, key="slider_questions")
 
-    round_count = st.session_state.round_count
+    with open("categories.json", "r") as f:
+        data = json.load(f)
 
-    for i in range(1, round_count + 1):
-        st.sidebar.title(f"Round {i}")
-        st.sidebar.divider()
-        st.sidebar.header("Adjust Question Settings")
+    categories = [item["name"] for item in data["categories"]]
+    category = st.sidebar.selectbox("Category", categories, key="select_category")
 
-        # Number of questions
-        amount = st.sidebar.slider("Number of Questions", 1, 20, key=f"slider_round_{i}")
+    # Difficulty selection
+    diff_mapping = {"Easy": "easy", "Medium": "medium", "Hard": "hard"}
+    selected_difficulty = st.sidebar.selectbox("Difficulty", ["Easy", "Medium", "Hard"], key="select_difficulty")
+    difficulty = diff_mapping[selected_difficulty]
 
-        # Load categories from JSON
-        with open("categories.json", "r") as f:
-            data = json.load(f)
+    # Question type selection
+    type_mapping = {"Multiple Choice": "multiple", "True/False": "boolean"}
+    selected_type = st.sidebar.selectbox("Question Type", ["Multiple Choice", "True/False"], key="select_type")
+    q_type = type_mapping[selected_type]
 
-        categories = [item["name"] for item in data["categories"]]
-        category = st.sidebar.selectbox("Category", categories, key=f"select_cat_round_{i}")
+    st.sidebar.divider()
 
-        # Difficulty
-        diff_mapping = {"Easy": "easy", "Medium": "medium", "Hard": "hard"}
-        selected_difficulty = st.sidebar.selectbox("Difficulty", ["Easy", "Medium", "Hard"], key=f"diff_round_{i}")
-        difficulty = diff_mapping[selected_difficulty]
+    if st.sidebar.button("Start!", key="start_button"):
+        # Get category id from categories.json
+        category_id = next((item["id"] for item in data["categories"] if item["name"] == category), None)
+        questions = fetch_questions(amount, category_id, difficulty, q_type)
 
-        # Question Type
-        type_mapping = {"Multiple Choice": "multiple", "True/False": "boolean"}
-        selected_type = st.sidebar.selectbox("Question Type", ["Multiple Choice", "True/False"],
-                                             key=f"type_round_{i}")
-        q_type = type_mapping[selected_type]
+        if questions:
+            st.session_state["questions"] = questions
+            st.session_state["answers"] = [None] * len(questions)  # Initialize answers in session state
 
-        st.sidebar.divider()
+    if "questions" in st.session_state:
+        questions = st.session_state["questions"]
+        st.subheader("Answer the Questions")
 
-        if st.sidebar.button("Fetch Questions", key=f"fetch_round_{i}"):
-            category_id = next((item["id"] for item in data["categories"] if item["name"] == category), None)
-            questions = fetch_questions(amount, category_id, difficulty, q_type)
+        with st.form(key="form_questions"):
+            answers = []
 
-            if questions:
-                st.session_state[f"questions_round_{i}"] = questions
-                st.session_state[f"answers_round_{i}"] = [None] * len(questions)
+            for idx, question in enumerate(questions):
+                st.write(f"**Question {idx + 1}:** {question['question']}")
+                options = question["incorrect_answers"] + [question["correct_answer"]]
+                random.shuffle(options)
 
-    # Display questions for the current round
-    for i in range(1, round_count + 1):
-        if f"questions_round_{i}" in st.session_state:
-            questions = st.session_state[f"questions_round_{i}"]
+                # Pre-select the answer if it exists in session state
+                selected_answer = st.radio(
+                    f"Choose an answer for Question {idx + 1}",
+                    options,
+                    key=f"question_{idx + 1}",
+                    index=options.index(st.session_state["answers"][idx]) if st.session_state["answers"][idx] else None
+                )
+                answers.append(selected_answer)
 
-            st.subheader(f"Round {i}: Answer the Questions")
-            with st.form(key=f"form_round_{i}"):
+            submitted = st.form_submit_button("Submit Answers")
+            if submitted:
+                st.session_state["answers"] = answers  # Store the selected answers in session state
+                score = 0
+                results = []
+
                 for idx, question in enumerate(questions):
-                    st.write(f"**Question {idx + 1}:** {question['question']}")
-                    options = question["incorrect_answers"] + [question["correct_answer"]]
-                    random.shuffle(options)
+                    user_answer = st.session_state["answers"][idx]
+                    correct_answer = question["correct_answer"]
+                    results.append({
+                        "Question": question["question"],
+                        "Your Answer": user_answer,
+                        "Correct Answer": correct_answer,
+                        "Correct?": "Yes" if user_answer == correct_answer else "No"
+                    })
+                    if user_answer == correct_answer:
+                        score += 1
 
-                    # Only pre-select if there is already an answer stored
-                    default_index = (
-                        options.index(st.session_state[f"answers_round_{i}"][idx])
-                        if st.session_state[f"answers_round_{i}"][idx] in options
-                        else None
-                    )
+                st.write(f"**Your Score:** {score}/{len(questions)}")
 
-                    st.session_state[f"answers_round_{i}"][idx] = st.radio(
-                        f"Choose an answer for Question {idx + 1}",
-                        options,
-                        key=f"round_{i}_question_{idx + 1}",
-                        index=default_index,
-                    )
-                submitted = st.form_submit_button("Submit Answers")
-                if submitted:
-                    # Calculate scores and display results
-                    score = 0
-                    for idx, question in enumerate(questions):
-                        user_answer = st.session_state[f"answers_round_{i}"][idx]
-                        correct_answer = question["correct_answer"]
-                        st.write(f"**Question {idx + 1}:** {question['question']}")
-                        st.write(f"**Your Answer:** {user_answer} | **Correct Answer:** {correct_answer}")
-                        if user_answer == correct_answer:
-                            score += 1
-                    st.write(f"**Round {i} Score:** {score}/{len(questions)}")
+                # Display the results in a table format
+                results_df = pd.DataFrame(results)
+                st.table(results_df)
 
-
-                # Show all answers at the end
-                # st.write("Your current answers:", st.session_state[f"answers_round_{i}"])
