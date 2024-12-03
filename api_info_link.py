@@ -38,8 +38,9 @@ def fetch_category_data():
     return category_counts
 
 def api_info_link():
-    # TODO Niel was here adding the condition to display the graph with a checkmark
-    st.sidebar.title("Get the questions") 
+    st.sidebar.title("API Info")
+    barchartShown = st.sidebar.checkbox("API Question Count")
+
     try:
         # Fetch the category data (cached version)
         category_counts = fetch_category_data()
@@ -48,8 +49,11 @@ def api_info_link():
         df = pd.DataFrame(category_counts)
 
         # Display data and bar chart
-        st.write("Total Questions per Category")
-        st.bar_chart(data=df, x="Category Name", y="Total Number of Questions", use_container_width=True)
+
+        if barchartShown: # condition to display bar chart
+
+            st.write("Total Questions per Category")
+            st.bar_chart(data=df, x="Category Name", y="Total Number of Questions", use_container_width=True)
 
     except requests.exceptions.RequestException as e:
         st.write(f"Error fetching data: {e}")
