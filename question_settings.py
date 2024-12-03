@@ -32,7 +32,7 @@ def question_settings():
     st.sidebar.title("Question Settings")
     st.sidebar.divider()
     
-    # Set number of questions
+    #QUESTION COUNT SLIDER
     amount = st.sidebar.slider("Number of Questions", 5, 20, key="slider_questions")
 
     with open("categories.json", "r") as f:
@@ -41,12 +41,12 @@ def question_settings():
     categories = [item["name"] for item in data["categories"]]
     category = st.sidebar.selectbox("Category", categories, key="select_category")
 
-    # Difficulty selection
+    #DIFFICULTY SELECTION
     diff_mapping = {"Easy": "easy", "Medium": "medium", "Hard": "hard"}
     selected_difficulty = st.sidebar.selectbox("Difficulty", ["Easy", "Medium", "Hard"], key="select_difficulty")
     difficulty = diff_mapping[selected_difficulty]
 
-    # Question type selection
+    #QUESTION TYPE SELECTION
     type_mapping = {"Multiple Choice": "multiple", "True/False": "boolean"}
     selected_type = st.sidebar.selectbox("Question Type", ["Multiple Choice", "True/False"], key="select_type")
     q_type = type_mapping[selected_type]
@@ -56,7 +56,7 @@ def question_settings():
     st.sidebar.divider()
 
     if st.sidebar.button("Game Start!", key="start_button"):
-        # Get category id from categories.json
+        #GET CATEGORIES FROM JSON
         category_id = next((item["id"] for item in data["categories"] if item["name"] == category), None)
         questions = fetch_questions(amount, category_id, difficulty, q_type)
 
@@ -100,10 +100,10 @@ def question_settings():
                 time.sleep(1)
                 timer.empty()
 
-                st.session_state["answers"] = answers  # Store the selected answers in session state
+                st.session_state["answers"] = answers
                 score = 0
                 results = []
-                accumulated_scores = []  # Track cumulative scores
+                accumulated_scores = []
 
                 for idx, question in enumerate(questions):
                     user_answer = st.session_state["answers"][idx]
@@ -124,13 +124,13 @@ def question_settings():
                 st.subheader(f"**{st.session_state.get("player_name")}'s Score:** {score}/{len(questions)}")
                 st.divider()
 
-                # Display the results in a table format
                 
+                #DISPLAY ANSWERS IN TABLE
                 st.write("**Answer Summary**")
                 results_df = pd.DataFrame(results)
                 st.table(results_df)
                 
-                # Create DataFrame for the line chart
+                #CREATE DATAFRAME FOR LINE CHART
                 chart_data = pd.DataFrame({
                     "Question Number": range(1, len(accumulated_scores) + 1),
                     "Cumulative Score": accumulated_scores
@@ -138,7 +138,7 @@ def question_settings():
 
                 st.divider()
                 
-                #Line chart
+                #LINE CHART DISPLAY
                 st.write("**Point Progress**")
                 st.line_chart(chart_data.set_index("Question Number"))
 
