@@ -3,6 +3,10 @@ import requests
 import random
 import json
 import pandas as pd
+import time
+from PIL import Image
+from geopy.geocoders import Nominatim
+from game_settings import game_settings
 
 def fetch_questions(amount=5, category=None, difficulty=None, q_type=None):
     url = "https://opentdb.com/api.php"
@@ -47,20 +51,30 @@ def question_settings():
     selected_type = st.sidebar.selectbox("Question Type", ["Multiple Choice", "True/False"], key="select_type")
     q_type = type_mapping[selected_type]
 
+    
+
     st.sidebar.divider()
 
-    if st.sidebar.button("Start!", key="start_button"):
+    if st.sidebar.button("Game Start!", key="start_button"):
         # Get category id from categories.json
         category_id = next((item["id"] for item in data["categories"] if item["name"] == category), None)
         questions = fetch_questions(amount, category_id, difficulty, q_type)
 
         if questions:
             st.session_state["questions"] = questions
-            st.session_state["answers"] = [None] * len(questions)  # Initialize answers in session state
+            st.session_state["answers"] = [None] * len(questions)  
 
-    if "questions" in st.session_state:
-        questions = st.session_state["questions"]
-        st.subheader("Answer the Questions")
+        col1, col2 = st.columns(2)
+
+        with col1:
+            if "questions" in st.session_state:
+                questions = st.session_state["questions"]
+                st.title(f"**{st.session_state.get("player_name")} Start!**")
+        
+        with col2:
+
+            if 'player_avatar' in st.session_state:
+                st.image(st.session_state.player_avatar)
 
         with st.form(key="form_questions"):
             answers = []
@@ -68,11 +82,10 @@ def question_settings():
             for idx, question in enumerate(questions):
                 st.write(f"**Question {idx + 1}:** {question['question']}")
                 options = question["incorrect_answers"] + [question["correct_answer"]]
-                # random.shuffle(options)
-
-                # Pre-select the answer if it exists in session state
+                
+                
                 selected_answer = st.radio(
-                    f"Choose an answer for Question {idx + 1}",
+                    f"Choose an answer",
                     options,
                     key=f"question_{idx + 1}",
                     index=None
@@ -81,9 +94,16 @@ def question_settings():
 
             submitted = st.form_submit_button("Submit Answers")
             if submitted:
+                timer = st.empty()
+                with timer:
+                    st.success("Answers Submitted")
+                time.sleep(1)
+                timer.empty()
+
                 st.session_state["answers"] = answers  # Store the selected answers in session state
                 score = 0
                 results = []
+                accumulated_scores = []  # Track cumulative scores
 
                 for idx, question in enumerate(questions):
                     user_answer = st.session_state["answers"][idx]
@@ -96,10 +116,43 @@ def question_settings():
                     })
                     if user_answer == correct_answer:
                         score += 1
-
-                st.write(f"**Your Score:** {score}/{len(questions)}")
+                    else: 
+                        score -= 1
+                        
+                    accumulated_scores.append(score)
+                
+                st.subheader(f"**{st.session_state.get("player_name")}'s Score:** {score}/{len(questions)}")
+                st.divider()
 
                 # Display the results in a table format
+                
+                st.write("**Answer Summary**")
                 results_df = pd.DataFrame(results)
                 st.table(results_df)
+                
+                # Create DataFrame for the line chart
+                chart_data = pd.DataFrame({
+                    "Question Number": range(1, len(accumulated_scores) + 1),
+                    "Cumulative Score": accumulated_scores
+                })
 
+                st.divider()
+                
+                #Line chart
+                st.write("**Point Progress**")
+                st.line_chart(chart_data.set_index("Question Number"))
+
+                st.divider()
+
+                st.write("**Current Location**")
+                
+                geolocator = Nominatim(user_agent="geoapi")
+                location = geolocator.geocode("Miami")
+
+                latitude, longitude = location.latitude, location.longitude
+
+                location_data = pd.DataFrame({'lat': [latitude], 'lon': [longitude]})
+
+                st.map(location_data)
+
+            
