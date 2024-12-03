@@ -61,6 +61,15 @@ def question_settings():
     if "questions" in st.session_state:
         questions = st.session_state["questions"]
 
+<<<<<<< Updated upstream
+=======
+        with col1:
+            if "questions" in st.session_state:
+                questions = st.session_state["questions"]
+                st.title(f'**{st.session_state.get("player_name")} Start!**')
+        
+        with col2:
+>>>>>>> Stashed changes
 
 
         st.subheader("Answer the Questions")
@@ -87,7 +96,18 @@ def question_settings():
 
             submitted = st.form_submit_button("Submit Answers")
             if submitted:
+<<<<<<< Updated upstream
                 st.session_state["answers"] = answers  # Store the selected answers in session state
+=======
+                st.write("Submitted")
+                timer = st.empty()
+                with timer:
+                    st.success("Answers Submitted")
+                time.sleep(1)
+                timer.empty()
+
+                st.session_state["answers"] = answers
+>>>>>>> Stashed changes
                 score = 0
                 results = []
 
@@ -104,10 +124,21 @@ def question_settings():
                         score += 1
                     else:
                         score -= 1
+<<<<<<< Updated upstream
 
                 st.write(f"**Your Score:** {score}/{len(questions)}")
 
                 # Display the results in a table format
+=======
+                        
+                    accumulated_scores.append(score)
+                
+                st.subheader(f"**{st.session_state.get('player_name')}\'s Score:** {score}/{len(questions)}")
+                st.divider()
+
+                #DISPLAY ANSWERS IN TABLE
+                st.write("**Answer Summary**")
+>>>>>>> Stashed changes
                 results_df = pd.DataFrame(results)
                 st.table(results_df)
 
