@@ -60,6 +60,9 @@ def question_settings():
 
     if "questions" in st.session_state:
         questions = st.session_state["questions"]
+
+
+
         st.subheader("Answer the Questions")
 
         with st.form(key="form_questions"):
@@ -68,7 +71,7 @@ def question_settings():
             for idx, question in enumerate(questions):
                 st.write(f"**Question {idx + 1}:** {question['question']}")
                 options = question["incorrect_answers"] + [question["correct_answer"]]
-                random.shuffle(options)
+                random.shuffle(options) # shuffle the array
 
                 # Pre-select the answer if it exists in session state
                 selected_answer = st.radio(
@@ -77,7 +80,6 @@ def question_settings():
                     key=f"question_{idx + 1}",
                     index=options.index(st.session_state["answers"][idx]) if st.session_state["answers"][idx] else None
                 )
-                answers.append(selected_answer)
 
             submitted = st.form_submit_button("Submit Answers")
             if submitted:
