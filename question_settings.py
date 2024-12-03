@@ -71,14 +71,18 @@ def question_settings():
             for idx, question in enumerate(questions):
                 st.write(f"**Question {idx + 1}:** {question['question']}")
                 options = question["incorrect_answers"] + [question["correct_answer"]]
+<<<<<<< Updated upstream
                 random.shuffle(options) # shuffle the array
+=======
+                # random.shuffle(options)
+>>>>>>> Stashed changes
 
                 # Pre-select the answer if it exists in session state
                 selected_answer = st.radio(
                     f"Choose an answer for Question {idx + 1}",
                     options,
                     key=f"question_{idx + 1}",
-                    index=options.index(st.session_state["answers"][idx]) if st.session_state["answers"][idx] else None
+                    index=None
                 )
 
             submitted = st.form_submit_button("Submit Answers")
@@ -98,6 +102,8 @@ def question_settings():
                     })
                     if user_answer == correct_answer:
                         score += 1
+                    else:
+                        score -= 1
 
                 st.write(f"**Your Score:** {score}/{len(questions)}")
 
