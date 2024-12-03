@@ -68,14 +68,14 @@ def question_settings():
             for idx, question in enumerate(questions):
                 st.write(f"**Question {idx + 1}:** {question['question']}")
                 options = question["incorrect_answers"] + [question["correct_answer"]]
-                random.shuffle(options)
+                # random.shuffle(options)
 
                 # Pre-select the answer if it exists in session state
                 selected_answer = st.radio(
                     f"Choose an answer for Question {idx + 1}",
                     options,
                     key=f"question_{idx + 1}",
-                    index=options.index(st.session_state["answers"][idx]) if st.session_state["answers"][idx] else None
+                    index=None
                 )
                 answers.append(selected_answer)
 
