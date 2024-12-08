@@ -1,6 +1,6 @@
 import streamlit as st
 import requests
-
+from PIL import Image
 
 def game_settings():
     st.title("Welcome to Trivia Time!")
@@ -14,6 +14,16 @@ def game_settings():
     if player_name:
         st.sidebar.write("**Player Name:**", player_name)
 
+    image = st.sidebar.file_uploader("Upload Player Avatar", type=["jpg", "jpeg", "png"])
+
+    if image:
+        player_avatar = Image.open(image)
+       
+        if player_avatar.size[0] <= 500 and player_avatar.size[1] <= 500: 
+            st.sidebar.image(player_avatar, caption="Uploaded Image", use_column_width=True)
+            st.session_state.player_avatar = player_avatar
+        else:
+            st.sidebar.warning("Image dimensions must be at least 500x500.")
 
     st.sidebar.divider()
 
